@@ -1,0 +1,79 @@
+#!name=红果短剧瘦身 · HongGuo Lite Plus
+#!desc=基础版全部规则 + 广告请求接口拦截（Map Local 返回空 JSON）。需要 MITM 与信任证书。
+#!author=Minis
+#!icon=https://raw.githubusercontent.com/k6nfmm7dbr-commits/hongguo-lite/main/icon.png
+#!category=去广告
+#!tag=去广告,红果短剧,短剧
+#!homepage=https://github.com/k6nfmm7dbr-commits/hongguo-lite
+#!openUrl=https://apps.apple.com/cn/app/id6451407032
+#!date=2026-10-06
+# ------------------------------------------------------------
+# ⚠️ 本版需要 MITM + 安装并信任 CA 证书。
+#    证书没装好时，改写规则不会生效（也不会报错），域名拦截部分照常工作。
+#
+# 为什么基础版还不够：
+#   穿山甲 SDK 的广告域在基础版里已经整域拦掉了，但红果**自己的
+#   API 也会下发广告**（走 *.snssdk.com/api/ad/），这条在域名层
+#   看不出任何异常 —— 路径里才写着 ad。只有 MITM 才能看到路径。
+#
+# 验证 MITM 是否生效：
+#   工具 → MITM → 确认 *.snssdk.com 在 hostname 列表里
+#   证书信任：iOS 设置 → 通用 → VPN与设备管理
+#             以及 设置 → 通用 → 关于本机 → 证书信任设置
+#
+# 不想装证书 —— 用 hongguo-lite.sgmodule（基础版）。
+# ------------------------------------------------------------
+
+[Rule]
+
+# ── 穿山甲 / Pangle 广告 SDK ──
+DOMAIN-KEYWORD,pangolin,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao-b.com,REJECT
+
+# ── 广告素材签名域（p3/p6/p9-ad-sign.byteimg.com）──
+DOMAIN-KEYWORD,-ad-sign.byteimg.com,REJECT
+
+# ── 广告跳转 ──
+DOMAIN,zlink.ugsdk.cn,REJECT
+
+# ── 字节广告 API 子域 ──
+DOMAIN-REGEX,^ads[0-9]+-normal\.zijieapi\.com$,REJECT
+
+# ── 埋点 / 上报（对内存帮助很小，介意可注释掉）──
+DOMAIN,mon.toutiaocloud.net,REJECT
+DOMAIN,mon.toutiaocloud.com,REJECT
+DOMAIN,i.snssdk.com,REJECT
+DOMAIN,i-lq.snssdk.com,REJECT
+DOMAIN,is.snssdk.com,REJECT
+DOMAIN,is-lq.snssdk.com,REJECT
+DOMAIN-KEYWORD,applog.fqnovel.com,REJECT
+DOMAIN-KEYWORD,-misc.fqnovel.com,REJECT
+
+
+# ── 广告请求接口 → 直接返回空 JSON ──
+# 返回 {} 而不是直接 reject：reject 会断开连接，SDK / App 可能
+# 当成网络错误去重试，反而多出请求。给个合法空响应最干净。
+[Map Local]
+^https://[^/]*pangolin-sdk-toutiao[^/]*/api/ad/union/sdk/ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+^https://[^/]*\.snssdk\.com/api/ad/ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+
+# ── 可选：CDN 上的广告素材路径（默认关闭）──
+# 广告安装包 / 渲染器 / 马赛克图走的是字节通用图片 CDN
+# （byteimg.com / pstatp.com），和正常内容共用域名，只能靠路径区分。
+# 想开就取消注释，并把这两个域加进下面的 MITM。
+# 代价：这是图片主 CDN，解密它们有额外 CPU 开销，对卡的机器不划算。
+#
+# [URL Rewrite]
+# ^https://[^/]*\.byteimg\.com/(ad-app-package|web\.business\.image) - reject
+# ^https://[^/]*\.(pglstatp-toutiao|pstatp)\.com/(obj|img)/(ad-app-package|ad)/ - reject
+
+
+# ── MITM ──
+# ⚠️ *.snssdk.com 是字节 App 的主 API 域，解密它风险面比较大：
+#    如果红果启用了证书固定（cert pinning），会让它连不上，
+#    表现是红果打不开 / 一直转圈。真遇到就删掉这一段，回到基础版
+#    （基础版的穿山甲拦截已经能干掉大部分广告）。
+[MITM]
+hostname = %APPEND% *.pangolin-sdk-toutiao.com, *.pangolin-sdk-toutiao-b.com, *.pangolin-sdk-toutiao1.com, *.snssdk.com

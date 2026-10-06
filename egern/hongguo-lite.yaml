@@ -1,0 +1,127 @@
+# ============================================================
+#  红果短剧瘦身 · HongGuo Lite  —— 基础版
+#  ----------------------------------------------------------
+#  作用：拦截红果短剧（字节 / com.phoenix.video）的穿山甲广告
+#        SDK、广告素材签名域和埋点上报，减少开屏广告等待、
+#        剧集插播广告加载与后台统计开销。
+#
+#  基础版特性：零 MITM、零证书、零脚本，只做域名拦截。
+#             导入即用，不会因为证书问题导致任何功能打不开。
+#
+#  ⚠️ 红果短剧的广告走**字节自家的穿山甲 SDK**（和抖音同源），
+#     所以核心就那几条：pangolin / pglstatp-toutiao / ad-sign。
+#     想连广告请求路径一起拦，用 hongguo-lite-plus.yaml。
+#
+#  ⚠️ 规则顺序：客户端从上到下匹配第一条命中的规则。若你的主配置
+#     里有更靠前的宽泛规则（如 DOMAIN-SUFFIX,snssdk.com,DIRECT），
+#     会抢先命中导致本模块失效。请把本模块规则置于其之前。
+#     验证：请求记录 → 打开红果短剧 → 看是否显示 REJECT。
+#
+#  ⚠️ 一个诚实的提醒：红果短剧是「免费看剧 + 广告」的商业模式。
+#     拦掉广告后如果发现某些「看广告得金币 / 解锁」的入口行为异常，
+#     把对应的那几行注释掉即可，其余规则不受影响。
+#
+#  域名清单交叉验证自社区模块（doovvip 红果短剧 Surge 模块 /
+#  LoonKissSurge 番茄小说去广告 / zqzess FanQieNovel /
+#  217heidai adblockfilters）。
+# ============================================================
+
+name: "红果短剧瘦身 · HongGuo Lite"
+description: "拦截红果短剧的穿山甲广告 SDK、广告素材签名域与埋点上报，减少开屏广告等待与剧集插播广告加载。基础版，无需 MITM 与证书。"
+author: "Minis"
+homepage: "https://github.com/k6nfmm7dbr-commits/hongguo-lite"
+manual: "https://github.com/k6nfmm7dbr-commits/hongguo-lite#readme"
+icon: "https://raw.githubusercontent.com/k6nfmm7dbr-commits/hongguo-lite/main/icon.png"
+open_url: "https://apps.apple.com/cn/app/id6451407032"
+
+
+rules:
+
+  # ── 穿山甲 / Pangle 广告 SDK ────────────────────────────
+  # 红果短剧的广告主体。一条 keyword 覆盖
+  # pangolin-sdk-toutiao{,-b,1}.com、pangolin-dsp-toutiao{,-b}.com
+  # 以及 api-access.* / log-api.* 等子域。
+  - domain_keyword:
+      match: "pangolin"
+      policy: REJECT
+  - domain_suffix:
+      match: "pglstatp-toutiao.com"
+      policy: REJECT
+  - domain_suffix:
+      match: "pglstatp-toutiao-b.com"
+      policy: REJECT
+
+  # ── 广告素材签名域 ──────────────────────────────────────
+  # p3/p6/p9-ad-sign.byteimg.com —— 多套独立规则集都验证过的
+  # 字节系免费内容 App（番茄 / 红果）广告签名域。
+  - domain_keyword:
+      match: "-ad-sign.byteimg.com"
+      policy: REJECT
+
+  # ── 广告跳转 ────────────────────────────────────────────
+  - domain:
+      match: "zlink.ugsdk.cn"
+      policy: REJECT
+
+  # ── 字节广告 API 子域 ───────────────────────────────────
+  # ads3-normal / ads5-normal.zijieapi.com 等。
+  # 只拦带 ads 前缀的子域，不碰 zijieapi.com 主域。
+  - domain_regex:
+      match: "^ads[0-9]+-normal\\.zijieapi\\.com$"
+      policy: REJECT
+
+  # ── 埋点 / 上报 ─────────────────────────────────────────
+  # 对内存帮助很小（省一点网络与后台线程），风险也低。
+  # 红果与番茄同属字节免费内容体系，这套域两边共用。
+  - domain:
+      match: "mon.toutiaocloud.net"
+      policy: REJECT
+  - domain:
+      match: "mon.toutiaocloud.com"
+      policy: REJECT
+  - domain:
+      match: "i.snssdk.com"
+      policy: REJECT
+  - domain:
+      match: "i-lq.snssdk.com"
+      policy: REJECT
+  - domain:
+      match: "is.snssdk.com"
+      policy: REJECT
+  - domain:
+      match: "is-lq.snssdk.com"
+      policy: REJECT
+  - domain_keyword:
+      match: "applog.fqnovel.com"     # log3/log5/rtlog3/rtlog5-applog
+      policy: REJECT
+  - domain_keyword:
+      match: "-misc.fqnovel.com"      # mon3-misc / mon11-misc(-lq)
+      policy: REJECT
+
+  # ── 可选：金币 / 安全 / 特效类上报（默认关闭）──────────
+  # 这三条在社区模块里是拦的，但语义不够确定：
+  #   vas.snssdk.com       可能是「增值服务」，拦了或影响金币任务
+  #   security.snssdk.com  设备安全上报
+  #   effect.snssdk.com    可能是特效资源，不一定是广告
+  # 想更激进就取消注释，发现功能异常就再注释回去。
+  # - domain:
+  #     match: "vas.snssdk.com"
+  #     policy: REJECT
+  # - domain:
+  #     match: "security.snssdk.com"
+  #     policy: REJECT
+  # - domain:
+  #     match: "effect.snssdk.com"
+  #     policy: REJECT
+
+
+# ── 故意没做的事 ────────────────────────────────────────────
+# ✗ 拦剧集视频 CDN（douyinvod / pstatp / byteimg 整域）
+#   → 广告和正片共用，拦了直接不能看
+# ✗ 拦 API 主域（snssdk.com / zijieapi.com / fqnovel.com）
+#   → 只拦其中明确是广告 / 埋点的子域
+# ✗ 用脚本解锁 VIP / 去水印
+#   → 那类脚本依赖会随版本变的响应结构，失效后反而拖慢请求。
+#     社区红果模块自己也把「VIP 响应脚本」移除了（实测无效）。
+# ✗ 拦金币 / 签到相关接口
+#   → 那是 App 的正常功能，不是广告。

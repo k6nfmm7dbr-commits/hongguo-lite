@@ -1,0 +1,52 @@
+#!name=红果短剧瘦身 · HongGuo Lite
+#!desc=拦截红果短剧的穿山甲广告 SDK、广告素材签名域与埋点上报，减少开屏广告等待与剧集插播广告加载。基础版，无需 MITM 与证书。
+#!author=Minis
+#!icon=https://raw.githubusercontent.com/k6nfmm7dbr-commits/hongguo-lite/main/icon.png
+#!category=去广告
+#!tag=去广告,红果短剧,短剧
+#!homepage=https://github.com/k6nfmm7dbr-commits/hongguo-lite
+#!openUrl=https://apps.apple.com/cn/app/id6451407032
+#!date=2026-10-06
+# ------------------------------------------------------------
+# Surge 格式模块。Egern / Surge / Loon / Stash / Shadowrocket
+# 均可直接导入（Egern 官方支持 Surge 模块）。
+#
+# 需要转换到其它客户端？把本文件的 raw 链接丢进 Script-Hub：
+#   https://script-hub.nfdns.top
+#
+# ⚠️ 红果短剧的广告走字节自家的穿山甲 SDK（和抖音同源），核心就
+#    那几条：pangolin / pglstatp-toutiao / ad-sign。
+#    想连广告请求路径一起拦，用 hongguo-lite-plus.sgmodule。
+#
+# ⚠️ 红果是「免费看剧 + 广告」的模式。拦掉广告后如果发现某些
+#    「看广告得金币 / 解锁」的入口行为异常，把对应那行注释掉即可。
+#
+# ⚠️ 本模块的 [Rule] 会合并进你的规则列表。请确认它排在更宽泛的
+#    snssdk.com / zijieapi.com 直连规则之前，否则不会生效。
+# ------------------------------------------------------------
+
+[Rule]
+
+# ── 穿山甲 / Pangle 广告 SDK ──
+DOMAIN-KEYWORD,pangolin,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao-b.com,REJECT
+
+# ── 广告素材签名域（p3/p6/p9-ad-sign.byteimg.com）──
+DOMAIN-KEYWORD,-ad-sign.byteimg.com,REJECT
+
+# ── 广告跳转 ──
+DOMAIN,zlink.ugsdk.cn,REJECT
+
+# ── 字节广告 API 子域（ads3-normal / ads5-normal.zijieapi.com 等）──
+DOMAIN-REGEX,^ads[0-9]+-normal\.zijieapi\.com$,REJECT
+
+# ── 埋点 / 上报（对内存帮助很小，介意可注释掉）──
+DOMAIN,mon.toutiaocloud.net,REJECT
+DOMAIN,mon.toutiaocloud.com,REJECT
+DOMAIN,i.snssdk.com,REJECT
+DOMAIN,i-lq.snssdk.com,REJECT
+DOMAIN,is.snssdk.com,REJECT
+DOMAIN,is-lq.snssdk.com,REJECT
+DOMAIN-KEYWORD,applog.fqnovel.com,REJECT
+DOMAIN-KEYWORD,-misc.fqnovel.com,REJECT

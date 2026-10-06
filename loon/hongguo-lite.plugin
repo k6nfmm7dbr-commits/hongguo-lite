@@ -1,0 +1,45 @@
+#!name = 红果短剧瘦身 · HongGuo Lite
+#!desc = 拦截红果短剧的穿山甲广告 SDK、广告素材签名域与埋点上报，减少开屏广告等待与剧集插播广告加载。基础版，无需 MitM 与证书。
+#!author = Minis
+#!icon = https://raw.githubusercontent.com/k6nfmm7dbr-commits/hongguo-lite/main/icon.png
+#!homepage = https://github.com/k6nfmm7dbr-commits/hongguo-lite
+#!tag = 去广告,红果短剧,短剧
+#!loon_version = 3.2.4(787)
+# ------------------------------------------------------------
+# Loon 插件。规则会合并进你的规则列表，请确认它排在更宽泛的
+# snssdk.com / zijieapi.com 直连规则之前，否则不会生效。
+#
+# 红果短剧的广告走字节自家的穿山甲 SDK（和抖音同源），核心就那几条。
+# 想连广告请求路径一起拦（需要 MitM）：用 Script-Hub 把
+# surge/hongguo-lite-plus.sgmodule 一键转成 Loon 插件。
+#   https://script-hub.nfdns.top
+#
+# ⚠️ 红果是「免费看剧 + 广告」的模式。拦掉广告后如果发现某些
+#    「看广告得金币 / 解锁」的入口行为异常，把对应那行注释掉即可。
+# ------------------------------------------------------------
+
+[Rule]
+
+# ── 穿山甲 / Pangle 广告 SDK ──
+DOMAIN-KEYWORD,pangolin,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao-b.com,REJECT
+
+# ── 广告素材签名域（p3/p6/p9-ad-sign.byteimg.com）──
+DOMAIN-KEYWORD,-ad-sign.byteimg.com,REJECT
+
+# ── 广告跳转 ──
+DOMAIN,zlink.ugsdk.cn,REJECT
+
+# ── 字节广告 API 子域 ──
+DOMAIN-REGEX,^ads[0-9]+-normal\.zijieapi\.com$,REJECT
+
+# ── 埋点 / 上报（对内存帮助很小，介意可注释掉）──
+DOMAIN,mon.toutiaocloud.net,REJECT
+DOMAIN,mon.toutiaocloud.com,REJECT
+DOMAIN,i.snssdk.com,REJECT
+DOMAIN,i-lq.snssdk.com,REJECT
+DOMAIN,is.snssdk.com,REJECT
+DOMAIN,is-lq.snssdk.com,REJECT
+DOMAIN-KEYWORD,applog.fqnovel.com,REJECT
+DOMAIN-KEYWORD,-misc.fqnovel.com,REJECT

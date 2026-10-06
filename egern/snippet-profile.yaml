@@ -1,0 +1,114 @@
+# ============================================================
+#  红果短剧瘦身 · 主配置片段
+#  ----------------------------------------------------------
+#  不想托管模块文件？把下面的 rules 直接粘进 Egern 主配置
+#  （Profile.yaml）的 rules 列表里即可，效果完全一样。
+#
+#  ⚠️ 位置很重要：客户端从上到下匹配第一条命中的规则。
+#     请把这段放在任何宽泛的直连规则之前，例如：
+#
+#         - domain_suffix: {match: "snssdk.com", policy: DIRECT}   ← 必须在下面这段之后
+#
+#     放错位置 = 完全失效。
+#
+#  验证：请求记录 → 打开红果短剧 → 看是否显示 REJECT。
+# ============================================================
+
+rules:
+
+  # ── 穿山甲 / Pangle 广告 SDK ──
+  - domain_keyword:
+      match: "pangolin"
+      policy: REJECT
+  - domain_suffix:
+      match: "pglstatp-toutiao.com"
+      policy: REJECT
+  - domain_suffix:
+      match: "pglstatp-toutiao-b.com"
+      policy: REJECT
+
+  # ── 广告素材签名域 ──
+  - domain_keyword:
+      match: "-ad-sign.byteimg.com"
+      policy: REJECT
+
+  # ── 广告跳转 ──
+  - domain:
+      match: "zlink.ugsdk.cn"
+      policy: REJECT
+
+  # ── 字节广告 API 子域 ──
+  - domain_regex:
+      match: "^ads[0-9]+-normal\\.zijieapi\\.com$"
+      policy: REJECT
+
+  # ── 埋点 / 上报（对内存帮助很小，介意可注释掉）──
+  - domain:
+      match: "mon.toutiaocloud.net"
+      policy: REJECT
+  - domain:
+      match: "mon.toutiaocloud.com"
+      policy: REJECT
+  - domain:
+      match: "i.snssdk.com"
+      policy: REJECT
+  - domain:
+      match: "i-lq.snssdk.com"
+      policy: REJECT
+  - domain:
+      match: "is.snssdk.com"
+      policy: REJECT
+  - domain:
+      match: "is-lq.snssdk.com"
+      policy: REJECT
+  - domain_keyword:
+      match: "applog.fqnovel.com"
+      policy: REJECT
+  - domain_keyword:
+      match: "-misc.fqnovel.com"
+      policy: REJECT
+
+
+# ============================================================
+#  可选：金币 / 安全 / 特效类上报（默认关闭）
+#  vas.snssdk.com 可能是「增值服务」，拦了或影响金币任务；
+#  security / effect 的语义也不够确定。想更激进再取消注释。
+# ============================================================
+#
+#   - domain:
+#       match: "vas.snssdk.com"
+#       policy: REJECT
+#   - domain:
+#       match: "security.snssdk.com"
+#       policy: REJECT
+#   - domain:
+#       match: "effect.snssdk.com"
+#       policy: REJECT
+
+
+# ============================================================
+#  进阶玩法：广告请求接口拦截（需要 MITM + 信任证书，默认关闭）
+#  穿山甲 SDK 的广告域在基础版里已经整域拦掉了，但红果自己的 API
+#  也会下发广告（*.snssdk.com/api/ad/），这条只有 MITM 才看得到路径。
+#  ⚠️ 会解密字节主 API 域，遇到问题就删掉。
+# ============================================================
+#
+# map_locals:
+#   - match: '^https://[^/]*pangolin-sdk-toutiao[^/]*/api/ad/union/sdk/'
+#     status_code: 200
+#     headers:
+#       Content-Type: application/json
+#     body: '{}'
+#   - match: '^https://[^/]*\.snssdk\.com/api/ad/'
+#     status_code: 200
+#     headers:
+#       Content-Type: application/json
+#     body: '{}'
+#
+# mitm:
+#   hostnames:
+#     includes:
+#       - "*.pangolin-sdk-toutiao.com"
+#       - "*.pangolin-sdk-toutiao-b.com"
+#       - "*.pangolin-sdk-toutiao1.com"
+#       - "*.snssdk.com"
